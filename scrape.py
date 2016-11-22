@@ -4,6 +4,7 @@ import requests
 from lxml import html
 # import lxml
 from tabulate import tabulate
+import re
 
 
 def extractdetailsfrom(deal, xpathdef):
@@ -18,9 +19,18 @@ def extractdetailsfrom(deal, xpathdef):
     # return BeautifulSoup(etree.tostring(result)).prettify()
 
 
+request_endpoints = ['http://dealsofamerica.com']
 response = requests.get('http://dealsofamerica.com')
 tree = html.fromstring(response.content)
-deals = tree.xpath('//*[@id="deals"]/section[@class="deal row"]')
+request_other = tree.xpath('//*[@id="deals-container"]/footer/ul/li/a/@href')
+request_endpoints.extend(request_other)
+# print request_endpoints
+formatted_requests = [re.sub(r'^\/\/',r'http://',x) for x in request_endpoints]
+deals=[]
+for r in formatted_requests:
+    res = requests.get(r)
+    tree = html.fromstring(res.content)
+    deals.extend(tree.xpath('//*[@id="deals"]/section[@class="deal row"]'))
 # print deals
 # print len(deals)
 dealtable = []
