@@ -62,14 +62,14 @@ def extract_deal_details_json():
     urls = extract_urls('http://dealsofamerica.com')
     extract_deals(urls)
     for deal in _deals:
-        dealrow = []
-        dealrow.append(extractdetailsfrom(deal, '//*[@class="deal row"]/section/'
-                                        'header/a/text()'))
-        dealrow.append(extractdetailsfrom(deal, '//*[@class="deal row"]/section/'
-                                      'header/span/text()'))
-        dealrow.append(extractdetailsfrom(deal, '//*[@class="deal row"]/section/'
-                                      'header/span/a/text()'))
-        _dealtable.append(dealrow)
+        description = extractdetailsfrom(deal, '//*[@class="deal row"]/section/'
+                                        'header/a/text()')
+        price = extractdetailsfrom(deal, '//*[@class="deal row"]/section/'
+                                      'header/span/text()')
+        company = extractdetailsfrom(deal, '//*[@class="deal row"]/section/'
+                                      'header/span/a/text()')
+        _dealtable.append({'description': description, 'price': price,
+                           'company': company})
 
 
 def get_tabular_data():
