@@ -1,10 +1,18 @@
-# from bs4 import BeautifulSoup
 from lxml import etree
 import requests
 from lxml import html
-# import lxml
 from tabulate import tabulate
 import re
+import json
+
+
+def init():
+    global _dealtable
+    global _deals
+    _dealtable = []
+    _deals = []
+    extract_deal_details_json()
+    # get_tabular_data()
 
 
 def extractdetailsfrom(deal, xpathdef):
@@ -12,35 +20,66 @@ def extractdetailsfrom(deal, xpathdef):
     result = innertree.xpath(xpathdef)
     if not result:
         return ''
-    # print type(result[0]) is lxml.html.HtmlElement
-    # print type(result[1]) is lxml.html.HtmlElement
-    # print etree.tostring(result[0])
     return result[0]
-    # return BeautifulSoup(etree.tostring(result)).prettify()
 
 
-request_endpoints = ['http://dealsofamerica.com']
-response = requests.get('http://dealsofamerica.com')
-tree = html.fromstring(response.content)
-request_other = tree.xpath('//*[@id="deals-container"]/footer/ul/li/a/@href')
-request_endpoints.extend(request_other)
-# print request_endpoints
-formatted_requests = [re.sub(r'^\/\/',r'http://',x) for x in request_endpoints]
-deals=[]
-for r in formatted_requests:
-    res = requests.get(r)
-    tree = html.fromstring(res.content)
-    deals.extend(tree.xpath('//*[@id="deals"]/section[@class="deal row"]'))
-# print deals
-# print len(deals)
-dealtable = []
-for deal in deals:
-    dealrow = []
-    dealrow.append(extractdetailsfrom(deal, '//*[@class="deal row"]/section/'
-                                      'header/a/text()'))
-    dealrow.append(extractdetailsfrom(deal, '//*[@class="deal row"]/section/'
+def extract_urls(start_url):
+    request_endpoints = [start_url]
+    response = requests.get(start_url)
+    tree = html.fromstring(response.content)
+    request_other = tree.xpath('//*[@id="deals-container"]/footer/ul/li/a/@href')
+    request_endpoints.extend(request_other)
+    formatted_requests = [re.sub(r'^\/\/',r'http://',x) for x in request_endpoints]
+    return formatted_requests
+
+
+def extract_deals(formatted_requests):
+    global _deals
+    for r in formatted_requests:
+        res = requests.get(r)
+        tree = html.fromstring(res.content)
+        _deals.extend(tree.xpath('//*[@id="deals"]/section[@class="deal row"]'))
+
+
+def extract_deal_details():
+    global _dealtable
+    global _deals
+    urls = extract_urls('http://dealsofamerica.com')
+    extract_deals(urls)
+    for deal in _deals:
+        dealrow = []
+        dealrow.append(extractdetailsfrom(deal, '//*[@class="deal row"]/section/'
+                                        'header/a/text()'))
+        dealrow.append(extractdetailsfrom(deal, '//*[@class="deal row"]/section/'
                                       'header/span/text()'))
-    dealrow.append(extractdetailsfrom(deal, '//*[@class="deal row"]/section/'
+        dealrow.append(extractdetailsfrom(deal, '//*[@class="deal row"]/section/'
                                       'header/span/a/text()'))
-    dealtable.append(dealrow)
-print tabulate(dealtable, headers=['description', 'price', 'company'])
+        _dealtable.append(dealrow)
+
+def extract_deal_details_json():
+    global _dealtable
+    global _deals
+    urls = extract_urls('http://dealsofamerica.com')
+    extract_deals(urls)
+    for deal in _deals:
+        dealrow = []
+        dealrow.append(extractdetailsfrom(deal, '//*[@class="deal row"]/section/'
+                                        'header/a/text()'))
+        dealrow.append(extractdetailsfrom(deal, '//*[@class="deal row"]/section/'
+                                      'header/span/text()'))
+        dealrow.append(extractdetailsfrom(deal, '//*[@class="deal row"]/section/'
+                                      'header/span/a/text()'))
+        _dealtable.append(dealrow)
+
+
+def get_tabular_data():
+    global _dealtable
+    print tabulate(_dealtable, headers=['description', 'price', 'company'])
+
+
+def get_json_data():
+    init()
+    return json.dumps(_dealtable)
+
+if __name__ == '__main__':
+    init()
